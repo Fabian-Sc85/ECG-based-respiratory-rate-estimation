@@ -1,4 +1,4 @@
-function [resp_rate_est, resp_signal_est, auto_corr, resp_depth] = ECG_calcRespRate(ecg,fs,varargin)
+function [resp_rate_est, resp_signal_est, auto_corr, resp_depth] = ECG_calcRespRate(ecg, fs, QRS, varargin)
 %ECG_calcRespRate Derivation of the respiratory rate from a given ecg
 %signal
 %   This function extracts the respiratory signal from an ecg signal by
@@ -7,7 +7,7 @@ function [resp_rate_est, resp_signal_est, auto_corr, resp_depth] = ECG_calcRespR
 %   respiratory signal by either autocorrelation or analysis in frequency
 %   domain
 %
-% Syntax: resp_rate_est = ECG_calcRespRate(ecg,fs,method, criterion)
+% Syntax: resp_rate_est = ECG_calcRespRate(ecg, fs, QRS, method, criterion)
 %
 % Inputs:
 %   ecg         -       preprocessed ecg signal
@@ -23,12 +23,10 @@ function [resp_rate_est, resp_signal_est, auto_corr, resp_depth] = ECG_calcRespR
 %                        between two R-peaks == heart-rate-variability) is
 %                        evaluated
 %                       default: R_amplitude
-%   qrs_complexes   -   precomputed QRS complexes in the N_qrs-by-3 Matrix QRS. 
-%                       If they are not provided, QRS-complexes are calculated
-%                       as needed
-%                      * QRS(:,1): Q-Points
-%                      * QRS(:,2): R-Points
-%                      * QRS(:,3): S-Points
+%   QRS             -   ECG-annotations. Q-, R-, and S-Points delineating teh heart beat
+%                       (QRS-complex). Can be estimated using appropriate
+%                       QRS-detection alogrithms (e.g. Pan-Tompkins
+%                       algorithm
 %   criterion       -   Method according to which the resulting respiration signal
 %                       is beeing analyzed. Possible values are:
 %                       * auto_corr: Calculation of the base frequency in time
@@ -51,9 +49,8 @@ function [resp_rate_est, resp_signal_est, auto_corr, resp_depth] = ECG_calcRespR
 %     derivation algorithms. 2001 Conference Proceedings of the 23rd Annual
 %     International Conference of the IEEE Engineering in Medicine and Biology
 %     Society, 2, 1998–2001. doi:10.1109/IEMBS.2001.1020622
-% [4] Dingab, S., Zhua, X., Chena, W., & Weia, D. (2004). Derivation of
-%     respiratory signal from single-channel ECGs based on Source Statistics.
-%     International Journal of Bioelectromagnetism, 6(1).
+% [4] J. Pan und W. J. Tompkins, „A real-time QRS detection algorithm“, IEEE
+%     Transactions Biomedical Engineering, Bd. 32, Nr. 3, S. 230–236, 1985.
 % [5] McLeod, P., & Wyvill, G. (2005). A smarter way to find pitch. In Proceedings
 %     of International Computer Music Conference, ICMC.
 % [6] De Cheveigné, A., & Kawahara, H. (2002). YIN, a fundamental frequency
@@ -75,16 +72,18 @@ addOptional(p,'method','R_amplitude',...
     @(x) any(validatestring(x,expected_method)));
 addOptional(p,'criterion','auto_corr',...
     @(x) any(validatestring(x,expected_criterion)));
-addOptional(p,'qrs_complexes',[],@isnumeric);
 addOptional(p,'f_range',[0.1, 0.6],@isnumeric);
 parse(p,varargin{:});
 % ecg = p.Results.ecg;
 % fs = p.Results.fs;
 method = p.Results.method;
 criterion = p.Results.criterion;
-QRS = p.Results.qrs_complexes;
 f_range = p.Results.f_range;
 t = linspace(0,length(ecg)/fs,length(ecg))';
+
+Q = QRS(1,:);
+R = QRS(2,:);
+S = QRS(3,:);
 
 switch method
     case 'QRS_area'
@@ -93,13 +92,6 @@ switch method
             warning('Signal duration shorter than 3 s. Accuracy may be insufficient')
         end
         
-        if isempty(QRS)
-            [Q, R, S] = ECG_QRSdetector(ecg,fs);
-        else
-            Q = QRS(1,:);
-            R = QRS(2,:);
-            S = QRS(3,:);
-        end
         peak_area = zeros(length(R),1);
         
         for i=1:length(Q)
@@ -126,13 +118,6 @@ switch method
         if T_meas < 3
             warning('Signal duration shorter than 3 s. Accuracy may be insufficient')
         end
-        
-        if isempty(QRS)
-            [~, R, S] = ECG_QRSdetector(ecg,fs);
-        else
-            R = QRS(2,:);
-            S = QRS(3,:);
-        end
 
         R_amp = ecg(R);
         S_amp = ecg(S);
@@ -143,11 +128,6 @@ switch method
         %         resp_signal_est = padarray(resp_signal_est,[length(ecg) - length(resp_signal_est),0],'post');
     
     case {'HRV2', 'HRV'}
-        if isempty(QRS) || size(QRS,2) < 5
-            [~, R] = ECG_QRSdetector(ecg,fs);
-        else
-            R = QRS(2,:);
-        end
         
         % there must be at least 5 R-peaks to compute a relieable
         % respiratory rate
