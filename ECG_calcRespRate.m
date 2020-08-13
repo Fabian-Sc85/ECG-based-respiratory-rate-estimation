@@ -127,7 +127,7 @@ switch method
 %         [~, resp_signal_est] = EMD_fresp_estimation(resp_signal_est, fs, 'f_range', f_range);
         %         resp_signal_est = padarray(resp_signal_est,[length(ecg) - length(resp_signal_est),0],'post');
     
-    case {'HRV2', 'HRV'}
+    case {'HRV'}
         
         % there must be at least 5 R-peaks to compute a relieable
         % respiratory rate
@@ -145,11 +145,13 @@ switch method
         resp_signal_est = resp_signal_est - mean(resp_signal_est);
         resp_signal_est = resp_signal_est./max(abs(resp_signal_est));
         
-        [~, resp_signal_est] = EMD_fresp_estimation(resp_signal_est, fs, 'f_range', f_range);
+        
         
     otherwise
         error(['Method ' method ' not supported']);
 end
+
+[~, resp_signal_est] = EMD_fresp_estimation(resp_signal_est, fs, 'f_range', f_range);
 
 resp_depth = iqr(resp_signal_est);
 switch criterion
