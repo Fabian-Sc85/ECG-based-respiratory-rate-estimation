@@ -2,6 +2,21 @@
 ## Introduction
 The purpose of this collection of functions is the indirect estimation of the respiratory rate from ECG signals. It accomplishes this by implementing several algorithms published by us ([Laboratory for Biosignal Processing](labp.github.io/)) or third parties.
 
+If you find this repository useful for your own research, please consider citing our paper:
+
+```
+@article{schrumpf2016derivation,
+  title={Derivation of the respiratory rate from directly and indirectly measured respiratory signals using autocorrelation},
+  author={Schrumpf, Fabian and Sturm, Matthias and Bausch, Gerold and Fuchs, Mirco},
+  journal={Current Directions in Biomedical Engineering},
+  volume={2},
+  number={1},
+  pages={241--245},
+  year={2016},
+  publisher={De Gruyter}
+}
+```
+
 ## Installation
 No installation is required. Just clone the repository to a folder of your choice and add it to your MATLAB path.
 
